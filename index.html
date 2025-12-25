@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fruti Aero Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-comment-alt"></i>
+                <h1>Fruti Aero Chat</h1>
+            </div>
+            <div class="creators">
+                <p>Criado por <span class="name">Erik</span> (JS, CSS & Webhook) e <span class="name">Gabriel</span> (HTML)</p>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h2><i class="fas fa-users"></i> Chat Global</h2>
+                    <div class="online-count">
+                        <i class="fas fa-wifi"></i>
+                        <span id="onlineCount">1</span> online
+                    </div>
+                </div>
+                
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Mensagens aparecerão aqui -->
+                    <div class="system-message">
+                        <i class="fas fa-info-circle"></i>
+                        Bem-vindo ao Fruti Aero Chat! Digite uma mensagem para começar.
+                    </div>
+                </div>
+                
+                <div class="chat-input-area">
+                    <div class="user-info">
+                        <div class="user-name-input">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="userName" placeholder="Seu nome (opcional)" maxlength="20">
+                        </div>
+                        <button id="sendBtn" class="send-btn">
+                            <i class="fas fa-paper-plane"></i> Enviar
+                        </button>
+                    </div>
+                    <div class="message-input">
+                        <textarea id="messageInput" placeholder="Digite sua mensagem aqui..." maxlength="500"></textarea>
+                        <div class="char-counter">
+                            <span id="charCount">0</span>/500
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-cog"></i> Configurações</h3>
+                    <div class="setting">
+                        <label for="soundToggle">
+                            <input type="checkbox" id="soundToggle" checked>
+                            Som de notificação
+                        </label>
+                    </div>
+                    <div class="setting">
+                        <label for="themeToggle">
+                            <input type="checkbox" id="themeToggle">
+                            Tema escuro
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-info-circle"></i> Sobre</h3>
+                    <p>Este é um chat compartilhado onde todos podem se comunicar em tempo real.</p>
+                    <p>Cada novo usuário é registrado automaticamente via webhook.</p>
+                </div>
+                
+                <div class="sidebar-section">
+                    <h3><i class="fas fa-user-shield"></i> Privacidade</h3>
+                    <p>Seu IP e informações do dispositivo são coletados apenas para fins de segurança e não são compartilhados publicamente.</p>
+                </div>
+            </div>
+        </main>
+        
+        <footer class="footer">
+            <p>Fruti Aero Chat &copy; 2025 - Desenvolvido por Erik e Gabriel</p>
+            <p class="connection-status">
+                <i class="fas fa-circle" id="connectionStatus"></i>
+                <span id="statusText">Conectando...</span>
+            </p>
+        </footer>
+    </div>
+
+    <!-- Notificação de áudio -->
+    <audio id="notificationSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-software-interface-start-2574.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="webhook.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
