@@ -3,109 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fruti Aero Chat</title>
+    <title>Chat Simples</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="logo">
-                <i class="fas fa-comment-alt"></i>
-                <h1>Fruti Aero Chat</h1>
-            </div>
-            <div class="user-info">
-                <span id="online-count">0 online</span>
-                <div class="user-badge">
-                    <i class="fas fa-user"></i>
-                    <span id="username-display">Visitante</span>
+    <div class="app">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-message"></i>
+                    <h2>Chat</h2>
                 </div>
-            </div>
-        </header>
-
-        <div class="chat-container">
-            <div class="sidebar">
-                <div class="user-setup">
-                    <h3><i class="fas fa-user-edit"></i> Seu Perfil</h3>
-                    <div class="input-group">
-                        <input type="text" id="username-input" placeholder="Digite seu nome..." maxlength="20">
-                        <button id="set-username">
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </div>
-                    <p class="hint">Se não definir um nome, será chamado de "Visitante"</p>
-                </div>
-                
-                <div class="online-users">
-                    <h3><i class="fas fa-users"></i> Online Agora</h3>
-                    <div id="users-list">
-                        <div class="user-item">
-                            <i class="fas fa-user-circle"></i>
-                            <span>Erik (Você)</span>
-                            <i class="fas fa-crown admin-icon"></i>
-                        </div>
-                        <div class="user-item">
-                            <i class="fas fa-user-circle"></i>
-                            <span>Gabriel</span>
-                            <i class="fas fa-code contributor-icon"></i>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="info-box">
-                    <h4><i class="fas fa-info-circle"></i> Sobre o Chat</h4>
-                    <p>Desenvolvido por <strong>Erik</strong> (JS/CSS/Webhook) e <strong>Gabriel</strong> (HTML)</p>
-                    <p>Estilo Fruti Aero</p>
-                    <p>Chat compartilhado em tempo real</p>
+                <div class="connection-status">
+                    <span class="status-dot online"></span>
+                    <span id="connection-text">Conectado</span>
                 </div>
             </div>
 
-            <div class="main-chat">
-                <div class="messages-container" id="messages-container">
-                    <div class="message system">
-                        <div class="message-content">
-                            <strong>🌟 Sistema:</strong> Bem-vindo ao Fruti Aero Chat! Desenvolvido por Erik e Gabriel.
-                        </div>
-                        <div class="message-time">Agora</div>
+            <div class="user-profile">
+                <div class="profile-info">
+                    <div class="avatar">
+                        <i class="fas fa-user"></i>
                     </div>
-                    <div class="message system">
-                        <div class="message-content">
-                            <strong>💡 Dica:</strong> Defina seu nome acima para personalizar suas mensagens!
-                        </div>
-                        <div class="message-time">Agora</div>
+                    <div>
+                        <h3 id="current-username">Visitante</h3>
+                        <p>Online agora</p>
                     </div>
                 </div>
-                
-                <div class="message-input-area">
-                    <div class="input-wrapper">
-                        <input type="text" id="message-input" placeholder="Digite sua mensagem..." maxlength="500">
-                        <button id="send-message">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                    <div class="input-actions">
-                        <button id="clear-chat" class="action-btn">
-                            <i class="fas fa-trash"></i> Limpar
-                        </button>
-                        <span class="char-count" id="char-count">0/500</span>
+                <button id="edit-profile" class="icon-btn">
+                    <i class="fas fa-edit"></i>
+                </button>
+            </div>
+
+            <div class="name-input-section">
+                <div class="input-group">
+                    <input type="text" id="username-input" placeholder="Digite seu nome...">
+                    <button id="save-username" class="btn-primary">
+                        Salvar
+                    </button>
+                </div>
+            </div>
+
+            <div class="online-section">
+                <h4><i class="fas fa-users"></i> Online (<span id="online-count">1</span>)</h4>
+                <div class="users-list" id="users-list">
+                    <div class="user-item">
+                        <span class="user-avatar"><i class="fas fa-user"></i></span>
+                        <span class="user-name">Você</span>
+                        <span class="user-status online"></span>
                     </div>
                 </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>Desenvolvido por <strong>Erik</strong> & <strong>Gabriel</strong></p>
+                <p class="small">JS/CSS/Webhook • HTML</p>
             </div>
         </div>
 
-        <footer class="footer">
-            <p>Chat Fruti Aero • Desenvolvido com ❤️ por <strong>Erik</strong> e <strong>Gabriel</strong></p>
-            <p class="connection-status">
-                <i class="fas fa-wifi" id="connection-icon"></i>
-                <span id="connection-text">Conectando...</span>
-            </p>
-        </footer>
-    </div>
+        <!-- Main Chat -->
+        <div class="main">
+            <div class="chat-header">
+                <h2><i class="fas fa-comments"></i> Chat Geral</h2>
+                <button id="clear-chat" class="btn-secondary">
+                    <i class="fas fa-trash"></i> Limpar
+                </button>
+            </div>
 
-    <div id="notification" class="notification">
-        <i class="fas fa-bell"></i>
-        <span id="notification-text"></span>
+            <div class="messages-container" id="messages-container">
+                <!-- Mensagens aparecerão aqui -->
+                <div class="welcome-message">
+                    <div class="welcome-icon">
+                        <i class="fas fa-comment-dots"></i>
+                    </div>
+                    <h3>Bem-vindo ao Chat</h3>
+                    <p>Digite seu nome à esquerda e comece a conversar!</p>
+                    <p class="small">Desenvolvido por Erik e Gabriel</p>
+                </div>
+            </div>
+
+            <div class="message-input-container">
+                <div class="input-wrapper">
+                    <input type="text" id="message-input" placeholder="Digite sua mensagem..." maxlength="500">
+                    <button id="send-message" class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span class="char-counter" id="char-counter">0/500</span>
+                    <span class="hint">Pressione Enter para enviar</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="script.js"></script>
